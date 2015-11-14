@@ -9,4 +9,4 @@ Grappl is a tool used to host servers behind closed ports, and it's powered by t
 Relay servers work like routers, establishing software-level tunnels and transmitting data.
 
 This is the code that runs in Grappl's relay servers. If you compile/run it, you can create your own
-working Grappl relay server, that can be connected to using the Grappl API or using the Advanced GUI.
+working Grappl relay server, which can be connected to using the Grappl API or using the Advanced GUI.

@@ -3,7 +3,7 @@ package io.grappl.server.host;
 import com.google.gson.Gson;
 import io.grappl.server.Application;
 import io.grappl.server.Relay;
-import io.grappl.server.host.exclient.ExClient;
+import io.grappl.server.host.exclient.ExternalClient;
 import io.grappl.server.logging.Log;
 
 import java.io.IOException;
@@ -15,17 +15,17 @@ import java.util.List;
 
 public class Host {
 
-    private HostData hostData;
-    private Relay relay;
     private ServerSocket applicationSocket;
     private ServerSocket messageSocket;
+
+    private HostData hostData;
+    private Relay relay;
     private boolean isOpen = false;
     private String associatedUser;
     private Socket controlSocket;
     private int port;
     private String user = "Anonymous";
-    private long heartBeatTime;
-    private List<ExClient> exClientList = new ArrayList<ExClient>();
+    private List<ExternalClient> exClientList = new ArrayList<>();
 
     public Host(Relay relay, Socket authSocket, String associatedUser) {
         this.relay = relay;
@@ -69,26 +69,21 @@ public class Host {
                 @Override
                 public void run() {
                 try {
-//                    System.out.println("started");
-
                     while(true) {
-//                        System.out.println("In loop");
                         Socket socket = applicationSocket.accept();
 
-                        ExClient exClient = new ExClient(host, socket);
+                        ExternalClient exClient = new ExternalClient(host, socket);
                         theStream.println(socket.getInetAddress().toString());
                         exClientList.add(exClient);
                         exClient.start();
                     }
                 } catch (Throwable e) {
-//                    System.out.println("Exception fired");
                     closeHost();
                 }
                 }
             });
             watchingThread.start();
 
-//            System.out.println("completely");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -100,6 +95,8 @@ public class Host {
 
             Log.debug("Closing server at " + getPort());
 
+            exClientList.clear();
+
             try {
                 applicationSocket.close();
                 messageSocket.close();
@@ -107,6 +104,7 @@ public class Host {
                 e.printStackTrace();
             }
 
+            getRelay().getPortAllocator().deallocatePort(port);
             getRelay().removeHost(this);
         }
     }
@@ -129,10 +127,10 @@ public class Host {
     }
 
     public void beatHeart() {
-        heartBeatTime = System.currentTimeMillis();
+
     }
 
-    public void disassociate(ExClient exClient) {
+    public void disassociate(ExternalClient exClient) {
         exClientList.remove(exClient);
     }
 
@@ -140,7 +138,7 @@ public class Host {
         return controlSocket;
     }
 
-    public List<ExClient> getExClientList() {
+    public List<ExternalClient> getExClientList() {
         return exClientList;
     }
 

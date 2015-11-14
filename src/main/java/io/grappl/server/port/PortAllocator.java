@@ -9,8 +9,12 @@ import java.util.Set;
 
 public class PortAllocator {
 
-    private Set<Integer> occupiedPorts = new HashSet<Integer>();
+    private static final int maxPort = 65534;
+
     private Relay relay;
+    private Set<Integer> occupiedPorts = new HashSet<>();
+
+    private Random portAllocatorRandom = new Random(31337420);
 
     public PortAllocator(Relay relay) {
         this.relay = relay;
@@ -21,7 +25,7 @@ public class PortAllocator {
             int port = relay.getAssociationMap().get(address);
 
             if(port == -1) {
-                int portNum = new Random().nextInt(60000);
+                int portNum = portAllocatorRandom.nextInt();
 
                 if(!isPortTaken(portNum) && !isPortTaken(portNum + 1)) {
                     return portNum;
@@ -33,12 +37,18 @@ public class PortAllocator {
             return port;
         }
 
-        int portNum = new Random().nextInt(60000);
+        int portNum = portAllocatorRandom.nextInt(maxPort);
 
         if(!isPortTaken(portNum) && !isPortTaken(portNum + 1)) {
             return portNum;
         } else {
             return getPort(address);
+        }
+    }
+
+    public void deallocatePort(int port) {
+        if(!relay.staticPorts.contains(port)) {
+            occupiedPorts.remove(port);
         }
     }
 

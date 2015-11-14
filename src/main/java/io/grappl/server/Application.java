@@ -53,7 +53,7 @@ public class Application {
     }
 
     public Application() {
-        relay = new Relay(this, RelayType.CORE);
+        relay = new Relay(this, RelayType.OTHER);
 
         CommandManager commandManager = new CommandManager(relay);
         commandManager.startCommandThread();

@@ -46,7 +46,6 @@ public class CoreConnection {
                 try {
                     while (true) {
                         byte code = dataInputStream.readByte();
-//                        Log.log("Received message: code: " + code);
 
                         // Incoming auth message
                         if (code == 0) {
@@ -57,7 +56,7 @@ public class CoreConnection {
                             String ip = spl[0];
                             String port = spl[1];
 
-                            Log.log("Associating " + ip + " with " + port);
+//                            Log.log("Associating " + ip + " with " + port);
                             int thePort = Integer.parseInt(port);
 
                             getRelay().associate(ip, thePort);

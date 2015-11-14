@@ -3,7 +3,6 @@ package io.grappl.server;
 import io.grappl.server.core.CoreConnection;
 import io.grappl.server.core.RelayData;
 import io.grappl.server.host.Host;
-import io.grappl.server.host.UserData;
 import io.grappl.server.logging.Log;
 import io.grappl.server.port.PortAllocator;
 
@@ -12,10 +11,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The {@code Relay} class represents a single relay server.
@@ -26,20 +22,19 @@ import java.util.Map;
 public class Relay {
 
     /** A list of all Grappl hosts currently connected. */
-    private List<Host> hostList = new ArrayList<Host>();
-    private Map<InetAddress, Host> hostByAddress = new HashMap<InetAddress, Host>();
-    private Map<Integer, Host> hostByPort = new HashMap<Integer, Host>();
+    private List<Host> hostList = new ArrayList<>();
+    private Map<String, List<Host>> hostByAddress = new HashMap<>();
+    private Map<Integer, Host> hostByPort = new WeakHashMap<>();
+    /** A map of associations between IPs and ports. Used primarily for static ports. */
+    private Map<String, Integer> associationMap = new HashMap<>();
+
+    public Set<Integer> staticPorts = new HashSet<>();
 
     /** Server socket for relay control connections */
     private ServerSocket relayControlServer;
 
     /** Server socket for heartbeat connection */
     private ServerSocket heartBeatServer;
-
-    /** A map of associations between IPs and ports. Used primarily for static ports. */
-    private Map<String, Integer> associationMap = new HashMap<String, Integer>();
-
-    private Map<InetAddress, UserData> userAssociations = new HashMap<InetAddress, UserData>();
 
     // The port allocator is the source of host's exposed ports
     private PortAllocator portAllocator;
@@ -110,13 +105,12 @@ public class Relay {
 
                             /* Start imported old code */
                             final Socket heartBeatClient = heartBeatServer.accept();
-//                            System.out.println("accepted heartbeat conncetion");
 
                             new Thread(new Runnable() {
                                 @Override
                                 public void run() {
 
-                                    final InetAddress server = heartBeatClient.getInetAddress();
+                                    final String server = heartBeatClient.getInetAddress().toString();
                                     try {
                                         Thread.sleep(350);
                                         DataInputStream dataInputStream = new DataInputStream(heartBeatClient
@@ -126,8 +120,9 @@ public class Relay {
                                         while(true) {
                                             int time = dataInputStream.readInt();
 
-//                                            System.out.println(server + " hearbeat");
-                                            hostByAddress.get(server).beatHeart();
+                                            for(Host host : hostByAddress.get(server)) {
+                                                host.beatHeart();
+                                            }
 
                                             try {
                                                 Thread.sleep(50);
@@ -136,11 +131,13 @@ public class Relay {
                                             }
                                         }
                                     } catch (Exception e) {
-                                        try {
-                                            hostByAddress.get(server).closeHost();
-                                        } catch (Exception ignore) {
+                                        List<Host> hosts = new ArrayList<>(hostByAddress.get(server));
 
+                                        for(Host host : hosts) {
+                                            host.closeHost();
                                         }
+
+                                        hostByAddress.remove(server);
                                     }
                                 }
                             }).start();
@@ -173,7 +170,14 @@ public class Relay {
 
     public void addHost(Host host) {
         hostList.add(host);
-        hostByAddress.put(host.getControlSocket().getInetAddress(), host);
+
+        if(!hostByAddress.containsKey(host.getControlSocket().getInetAddress().toString())) {
+            hostByAddress.put(host.getControlSocket().getInetAddress().toString(), new ArrayList<Host>());
+        }
+
+        hostByAddress.get(host.getControlSocket().getInetAddress().toString())
+                .add(host);
+
         hostByPort.put(host.getApplicationSocket().getLocalPort(), host);
 
         if(getRelayType() == RelayType.CORE) {
@@ -184,7 +188,7 @@ public class Relay {
 
     public void removeHost(Host host) {
         hostList.remove(host);
-        hostByAddress.remove(host.getControlSocket().getInetAddress());
+        hostByAddress.get(host.getControlSocket().getInetAddress().toString()).remove(host);
         hostByPort.remove(host.getApplicationSocket().getLocalPort());
 
         if(getRelayType() == RelayType.CORE) {
@@ -194,7 +198,7 @@ public class Relay {
     }
 
     public void associate(String ip, int port) {
-        Log.log("Associating ip with port: " + port);
+//        Log.log("Associating ip with port: " + port);
 
         try {
             InetAddress inetAddress = InetAddress.getByName(ip.substring(1, ip.length()));
@@ -206,11 +210,13 @@ public class Relay {
             e.printStackTrace();
         }
 
+        staticPorts.add(port);
+
         associationMap.put(ip, port);
     }
 
     public Host getHostByAddress(InetAddress inetAddress) {
-        return hostByAddress.get(inetAddress);
+        return hostByAddress.get(inetAddress.getAddress().toString()).get(0);
     }
 
     public Host getHostByPort(int port) {
@@ -225,19 +231,7 @@ public class Relay {
         return portAllocator;
     }
 
-    public ServerSocket getRelayControlServer() {
-        return relayControlServer;
-    }
-
-    public ServerSocket getHeartBeatServer() {
-        return heartBeatServer;
-    }
-
     public Map<String, Integer> getAssociationMap() {
         return associationMap;
-    }
-
-    public RelayData getRelayData() {
-        return new RelayData("nope", "avi");
     }
 }
