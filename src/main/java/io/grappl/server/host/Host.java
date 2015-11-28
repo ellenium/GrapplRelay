@@ -17,76 +17,68 @@ public class Host {
 
     private ServerSocket applicationSocket;
     private ServerSocket messageSocket;
-
-    private HostData hostData;
-    private Relay relay;
-    private boolean isOpen = false;
-    private String associatedUser;
     private Socket controlSocket;
-    private int port;
-    private String user = "Anonymous";
+
+    private Relay relay;
+    private HostData hostData;
+
+    private boolean isOpen = false;
     private List<ExternalClient> exClientList = new ArrayList<>();
 
-    public Host(Relay relay, Socket authSocket, String associatedUser) {
+    public Host(Relay relay, Socket controlSocket) {
         this.relay = relay;
-        this.controlSocket = authSocket;
-        this.associatedUser = associatedUser;
+        this.controlSocket = controlSocket;
     }
 
-    public Relay getRelay() {
-        return relay;
-    }
-
-    public HostData getHostData() {
-        return hostData;
-    }
-
-    public void openServer() {
+    public void openServer(String associatedUser) {
         final Host host = this;
 
-        port = getRelay().getPortAllocator().getPort(controlSocket.getInetAddress().toString());
-        hostData = new HostData(associatedUser, controlSocket.getInetAddress().getHostAddress().toString(), port);
+        int port = getRelay().getPortAllocator().getPort(controlSocket.getInetAddress().toString());
 
-        PrintStream printStream = null;
-        try {
-            printStream = new PrintStream(getControlSocket().getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        printStream.println(port + "");
-        final PrintStream theStream = printStream;
+        hostData = new HostData(
+                associatedUser,
+                controlSocket.getInetAddress().getHostAddress(),
+                port
+        );
 
         try {
-            // Initialize associated servers
-            applicationSocket = new ServerSocket(port);
-            messageSocket = new ServerSocket(port + 1);
+            PrintStream printStream = new PrintStream(getControlSocket().getOutputStream());
+            printStream.println(port + "");
 
-            Log.debug("Host hosting @ [" + port + "|" + (port + 1) + "]");
-            Log.debug(getHostSnapshot().toJson());
+            final PrintStream theStream = printStream;
 
-            isOpen = true;
-            Thread watchingThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                try {
-                    while(true) {
-                        Socket socket = applicationSocket.accept();
+            try {
+                // Initialize associated servers
+                applicationSocket = new ServerSocket(port);
+                messageSocket = new ServerSocket(port + 1);
 
-                        ExternalClient exClient = new ExternalClient(host, socket);
-                        theStream.println(socket.getInetAddress().toString());
-                        exClientList.add(exClient);
-                        exClient.start();
+                Log.debug("Host hosting @ [" + port + "|" + (port + 1) + "]");
+                Log.debug(getHostSnapshot().toJson());
+
+                isOpen = true;
+                Thread watchingThread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            while (true) {
+                                Socket socket = applicationSocket.accept();
+
+                                ExternalClient exClient = new ExternalClient(host, socket);
+                                theStream.println(socket.getInetAddress().toString());
+                                exClientList.add(exClient);
+                                exClient.start();
+                            }
+                        } catch (Throwable e) {
+                            closeHost();
+                        }
                     }
-                } catch (Throwable e) {
-                    closeHost();
-                }
-                }
-            });
-            watchingThread.start();
+                });
+                watchingThread.start();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception ignore) {}
     }
 
     public void closeHost() {
@@ -104,7 +96,7 @@ public class Host {
                 e.printStackTrace();
             }
 
-            getRelay().getPortAllocator().deallocatePort(port);
+            getRelay().getPortAllocator().deallocatePort(hostData.getPortNum());
             getRelay().removeHost(this);
         }
     }
@@ -119,16 +111,14 @@ public class Host {
     }
 
     public int getPort() {
-        return port;
+        return hostData.getPortNum();
     }
 
     public ServerSocket getApplicationSocket() {
         return applicationSocket;
     }
 
-    public void beatHeart() {
-
-    }
+    public void beatHeart() {}
 
     public void disassociate(ExternalClient exClient) {
         exClientList.remove(exClient);
@@ -147,14 +137,18 @@ public class Host {
     }
 
     public HostSnapshot getHostSnapshot() {
-        return new HostSnapshot(user, controlSocket.getInetAddress().getHostAddress(), getApplicationSocket().getLocalPort(), getExClientCount());
+        return new HostSnapshot(hostData.getUserHosting(), controlSocket.getInetAddress().getHostAddress(), getApplicationSocket().getLocalPort(), getExClientCount());
     }
 
     public ServerSocket getMessageSocket() {
         return messageSocket;
     }
 
-    public String getAssociatedUser() {
-        return associatedUser;
+    public Relay getRelay() {
+        return relay;
+    }
+
+    public HostData getHostData() {
+        return hostData;
     }
 }

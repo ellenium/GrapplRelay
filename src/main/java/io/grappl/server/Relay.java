@@ -1,10 +1,11 @@
 package io.grappl.server;
 
 import io.grappl.server.core.CoreConnection;
-import io.grappl.server.core.RelayData;
 import io.grappl.server.host.Host;
 import io.grappl.server.logging.Log;
 import io.grappl.server.port.PortAllocator;
+import io.grappl.server.port.RandomPortAllocator;
+import io.grappl.server.port.SequentialPortAllocator;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class Relay {
     public Relay(Application application, RelayType relayType) {
         this.application = application;
         this.relayType = relayType;
-        portAllocator = new PortAllocator(this);
+        portAllocator = new SequentialPortAllocator(this);
     }
 
     public RelayType getRelayType() {
@@ -83,8 +84,8 @@ public class Relay {
                     while(true) {
                         try {
                             Socket relayConnection = relayControlServer.accept();
-                            Host host = new Host(relayServer, relayConnection, "Anonymous");
-                            host.openServer();
+                            Host host = new Host(relayServer, relayConnection);
+                            host.openServer("Anonymous");
                             addHost(host);
                         } catch (Exception e) {
                             e.printStackTrace();
