@@ -22,6 +22,8 @@ public class Host {
     private Relay relay;
     private HostData hostData;
 
+    public boolean heartbeatOpened = false;
+
     private boolean isOpen = false;
     private List<ExternalClient> exClientList = new ArrayList<>();
 
@@ -57,8 +59,10 @@ public class Host {
                     @Override
                     public void run() {
 
-                        Log.debug("Host hosting @ [" + port + "|" + (port + 1) + "]");
-                        Log.debug(getHostSnapshot().toJson());
+                        Log.debug("Host opened occupying ports {" + port + ", " + (port + 1) + "}");
+                        Log.debug("Details: " + getHostSnapshot().toJson());
+                        Log.debug("Free memory: " + Runtime.getRuntime().freeMemory());
+
                         try {
                             while (true) {
                                 Socket socket = applicationSocket.accept();
@@ -120,7 +124,7 @@ public class Host {
         return applicationSocket;
     }
 
-    public void beatHeart() {}
+    public void beatHeart() { heartbeatOpened = true; }
 
     public void disassociate(ExternalClient exClient) {
         exClientList.remove(exClient);

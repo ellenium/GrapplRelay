@@ -22,7 +22,7 @@ public class ExternalClient {
     }
 
     public void start() {
-        Log.debug("ExClient connected from " + socket.getInetAddress().toString() + ":" + socket.getPort());
+        Log.debug("Client connected from " + socket.getInetAddress().toString() + ":" + socket.getPort());
         Log.debug(getHost().getApplicationSocket().getLocalPort() + ":" + getHost().getExClientList().size() + " clients connected");
 
         final Socket local = socket;
@@ -104,7 +104,7 @@ public class ExternalClient {
     public void close() {
         if(!isClosed) {
             isClosed = true;
-            Log.debug("ExClient disconnected from " + socket.getInetAddress().toString() + ":" + socket.getPort());
+            Log.debug("Client disconnected from " + socket.getInetAddress().toString() + ":" + socket.getPort());
             try {
                 socket.close();
             } catch (IOException e) {

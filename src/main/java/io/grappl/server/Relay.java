@@ -1,15 +1,20 @@
 package io.grappl.server;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import io.grappl.server.core.CoreConnection;
 import io.grappl.server.host.Host;
 import io.grappl.server.logging.Log;
 import io.grappl.server.port.PortAllocator;
 import io.grappl.server.port.RandomPortAllocator;
 import io.grappl.server.port.SequentialPortAllocator;
+import sun.net.httpserver.HttpServerImpl;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
@@ -83,6 +88,22 @@ public class Relay {
             heartBeatServer = new ServerSocket(Globals.HEARTBEAT_PORT);
             Log.log("| Started heartbeat server @ " + Globals.HEARTBEAT_PORT);
 
+            HttpServer httpServer = HttpServer.create(new InetSocketAddress(33433), 0);
+            httpServer.createContext("/", new HttpHandler() {
+                @Override
+                public void handle(HttpExchange httpExchange) throws IOException {
+                    StringBuilder page = new StringBuilder("<html><body bgcolor = 'cyan'>" +
+                            "<h1>Relay is UP!<br>" +
+                            hostList.size() + " hosts 'up'" +
+                            "</h1></body></html>");
+
+                    httpExchange.sendResponseHeaders(200, page.length());
+                    httpExchange.getResponseBody().write(page.toString().getBytes());
+                    httpExchange.close();
+                }
+            });
+            httpServer.start();
+
             /**
              * Thread that listens for relay control connections from Grappl clients
              */
@@ -92,6 +113,7 @@ public class Relay {
                     while(true) {
                         try {
                             Socket relayConnection = relayControlServer.accept();
+
                             Host host = new Host(relayServer, relayConnection);
                             host.openServer("Anonymous");
                             addHost(host);
