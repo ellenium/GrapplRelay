@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -54,7 +55,7 @@ public class Relay {
     public Relay(Application application, RelayType relayType) {
         this.application = application;
         this.relayType = relayType;
-        portAllocator = new SequentialPortAllocator(this);
+        portAllocator = new SequentialPortAllocator(this, 500);
     }
 
     public RelayType getRelayType() {
@@ -93,9 +94,17 @@ public class Relay {
                 @Override
                 public void handle(HttpExchange httpExchange) throws IOException {
                     StringBuilder page = new StringBuilder("<html><body bgcolor = 'cyan'>" +
-                            "<h1>Relay is UP!<br>" +
-                            hostList.size() + " hosts 'up'" +
-                            "</h1></body></html>");
+                            "<h1><a href = 'http://grappl.io'>Grappl</a> relay is up!<br>" +
+                            "Relay publicly available at " + InetAddress.getLocalHost().toString() + "<br>" +
+                            hostList.size() + " hosts 'up' (This number is frequently very inaccurate thanks to memory leaks!)<br>" +
+                            "Free memory: " + NumberFormat.getInstance(Locale.US).format(Runtime.getRuntime().freeMemory()) + " bytes<br>" +
+                            "<hr>");
+
+                    for(Integer i : staticPorts) {
+                        page.append(i + " static port allocated<br>");
+                    }
+
+                    page.append("</h1></body></html>");
 
                     httpExchange.sendResponseHeaders(200, page.length());
                     httpExchange.getResponseBody().write(page.toString().getBytes());

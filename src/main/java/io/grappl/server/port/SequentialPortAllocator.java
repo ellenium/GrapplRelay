@@ -11,8 +11,9 @@ public class SequentialPortAllocator implements PortAllocator {
     private int lastPort = 500;
     private Set<Integer> occupiedPorts = new HashSet<>();
 
-    public SequentialPortAllocator(Relay relay) {
+    public SequentialPortAllocator(Relay relay, int startPort) {
         this.relay = relay;
+        this.lastPort = startPort;
     }
 
     @Override
