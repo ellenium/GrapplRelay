@@ -33,7 +33,7 @@ public class Host {
     public void openServer(String associatedUser) {
         final Host host = this;
 
-        int port = getRelay().getPortAllocator().getPort(controlSocket.getInetAddress().toString());
+        final int port = getRelay().getPortAllocator().getPort(controlSocket.getInetAddress().toString());
 
         hostData = new HostData(
                 associatedUser,
@@ -52,13 +52,13 @@ public class Host {
                 applicationSocket = new ServerSocket(port);
                 messageSocket = new ServerSocket(port + 1);
 
-                Log.debug("Host hosting @ [" + port + "|" + (port + 1) + "]");
-                Log.debug(getHostSnapshot().toJson());
-
                 isOpen = true;
                 Thread watchingThread = new Thread(new Runnable() {
                     @Override
                     public void run() {
+
+                        Log.debug("Host hosting @ [" + port + "|" + (port + 1) + "]");
+                        Log.debug(getHostSnapshot().toJson());
                         try {
                             while (true) {
                                 Socket socket = applicationSocket.accept();
@@ -77,6 +77,7 @@ public class Host {
 
             } catch (IOException e) {
                 e.printStackTrace();
+                closeHost();
             }
         } catch (Exception ignore) {}
     }
@@ -86,6 +87,7 @@ public class Host {
             isOpen = false;
 
             Log.debug("Closing server at " + getPort());
+            Log.debug(getRelay().getHostList().size() + " hosts still 'open'");
 
             exClientList.clear();
 
