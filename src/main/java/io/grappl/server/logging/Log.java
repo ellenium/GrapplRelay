@@ -14,6 +14,12 @@ public class Log {
 
     public static void log(String toBeLogged) {
         String tag = DateFormat.getDateTimeInstance().format(new Date(System.currentTimeMillis()));
-        System.out.println("[" + tag + "] " + toBeLogged);
+        String[] spl = tag.split("\\s+");
+        String realTag = spl[3] + " " + spl[4];
+        System.out.println("[" + realTag + "] " + toBeLogged);
+    }
+
+    public static void raw(String raw) {
+        System.out.println(raw);
     }
 }

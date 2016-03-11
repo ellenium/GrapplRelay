@@ -29,7 +29,7 @@ public class CoreConnection {
         this.relay = relay;
 
         isUp = true;
-        Log.log("Connected to core");
+        Log.log("{ Connected to core. }");
         Globals.connectedToCore = true;
 
         try {
@@ -59,11 +59,13 @@ public class CoreConnection {
 //                            Log.log("Associating " + ip + " with " + port);
                             int thePort = Integer.parseInt(port);
 
-                            getRelay().associate(ip, thePort);
+                            try {
+                                getRelay().associate(ip, thePort);
+                            } catch (Exception e) {}
                         }
                     }
                 } catch (IOException e) {
-                    Log.log("Connection broken with core server");
+                    Log.log("{ Connection broken with core server! }");
                     Globals.connectedToCore = false;
                 }
             }

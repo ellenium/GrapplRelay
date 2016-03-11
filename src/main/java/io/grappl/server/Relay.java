@@ -70,10 +70,18 @@ public class Relay {
         final Relay relayServer = this;
 
         try {
+            Log.log("Grappl Relay Server | Version Beta 1_01 | Caution, may be unstable!");
+            Log.log("There have been issues with memory leaks, so be sure to provide globs of RAM! (512MB-1GB!)");
+            Log.log("Public address: " + InetAddress.getLocalHost().toString());
+            Log.log("Messaging port: " + Globals.MESSAGING_PORT + " {This port is used to open tunnels.}");
+            Log.log("Heartbeat server: " + Globals.HEARTBEAT_PORT + " {This port is used by the client to open heartbeat connections!}");
+            Log.log("-----------------------------------------------------");
+            Log.log("Starting serversockets...");
+
             relayControlServer = new ServerSocket(Globals.MESSAGING_PORT);
-            Log.log("Started messaging server @ " + Globals.MESSAGING_PORT);
+            Log.log("| Started messaging server @ " + Globals.MESSAGING_PORT);
             heartBeatServer = new ServerSocket(Globals.HEARTBEAT_PORT);
-            Log.log("Started heartbeat server @ " + Globals.HEARTBEAT_PORT);
+            Log.log("| Started heartbeat server @ " + Globals.HEARTBEAT_PORT);
 
             /**
              * Thread that listens for relay control connections from Grappl clients
@@ -94,6 +102,7 @@ public class Relay {
                 }
             });
             relayListener.start();
+            Log.debug("Started messaging thread");
 
             /**
              * Thread that for heartbeat connections from Grappl clients
@@ -126,9 +135,17 @@ public class Relay {
                                             }
 
                                             try {
-                                                Thread.sleep(50);
+                                                Thread.sleep(40);
                                             } catch (InterruptedException e) {
                                                 e.printStackTrace();
+                                                List<Host> hosts = new ArrayList<>(hostByAddress.get(server));
+
+                                                for(Host host : hosts) {
+                                                    host.closeHost();
+                                                }
+
+                                                hostByAddress.remove(server);
+                                                break;
                                             }
                                         }
                                     } catch (Exception e) {
@@ -152,6 +169,9 @@ public class Relay {
                 }
             });
             heartBeatListener.start();
+            Log.debug("Started heartbeat thread");
+
+            Log.debug("Relay fully initialized. Waiting for connections");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -217,7 +237,11 @@ public class Relay {
     }
 
     public Host getHostByAddress(InetAddress inetAddress) {
-        return hostByAddress.get(inetAddress.getAddress().toString()).get(0);
+        try {
+            String host = inetAddress.getAddress().toString();
+            return hostByAddress.get(host).get(0);
+        } catch (Exception e){}
+        return null;
     }
 
     public Host getHostByPort(int port) {
