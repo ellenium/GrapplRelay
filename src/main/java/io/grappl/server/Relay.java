@@ -55,7 +55,7 @@ public class Relay {
     public Relay(Application application, RelayType relayType) {
         this.application = application;
         this.relayType = relayType;
-        portAllocator = new SequentialPortAllocator(this, 500);
+        portAllocator = new RandomPortAllocator(this);
     }
 
     public RelayType getRelayType() {
@@ -95,14 +95,14 @@ public class Relay {
                 public void handle(HttpExchange httpExchange) throws IOException {
                     StringBuilder page = new StringBuilder("<html><body bgcolor = 'cyan'>" +
                             "<h1><a href = 'http://grappl.io'>Grappl</a> relay is up!<br>" +
-                            "Relay publicly available at " + InetAddress.getLocalHost().toString() + "<br>" +
-                            hostList.size() + " hosts 'up' (This number is frequently very inaccurate thanks to memory leaks!)<br>" +
+//                            "Relay publicly available at " + InetAddress.getLocalHost().toString() + "<br>" +
+//                            hostList.size() + " hosts 'up' (This number is frequently very inaccurate thanks to memory leaks!)<br>" +
                             "Free memory: " + NumberFormat.getInstance(Locale.US).format(Runtime.getRuntime().freeMemory()) + " bytes<br>" +
                             "<hr>");
 
-                    for(Integer i : staticPorts) {
-                        page.append(i + " static port allocated<br>");
-                    }
+//                    for(Integer i : staticPorts) {
+//                        page.append(i + " static port allocated<br>");
+//                    }
 
                     page.append("</h1></body></html>");
 

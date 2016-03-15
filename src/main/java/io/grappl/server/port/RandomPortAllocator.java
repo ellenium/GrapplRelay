@@ -26,7 +26,8 @@ public class RandomPortAllocator implements PortAllocator {
             int port = relay.getAssociationMap().get(address);
 
             if(port == -1) {
-                int portNum = portAllocatorRandom.nextInt();
+                int portNum = portAllocatorRandom.nextInt(maxPort);
+                System.out.println("picked random port: " + portNum);
 
                 if(!isPortTaken(portNum) && !isPortTaken(portNum + 1)) {
                     return portNum;
