@@ -8,8 +8,6 @@ import io.grappl.server.host.Host;
 import io.grappl.server.logging.Log;
 import io.grappl.server.port.PortAllocator;
 import io.grappl.server.port.RandomPortAllocator;
-import io.grappl.server.port.SequentialPortAllocator;
-import sun.net.httpserver.HttpServerImpl;
 
 import java.io.DataInputStream;
 import java.io.IOException;
