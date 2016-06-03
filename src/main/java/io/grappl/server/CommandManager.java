@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Scanner;
 
 public class CommandManager {
-
     private Relay relay;
 
     public CommandManager(Relay relay) {
@@ -19,7 +18,7 @@ public class CommandManager {
 
         final String commandName = parts[0];
 
-        if (commandName.equalsIgnoreCase("inspect")) {
+        if (commandName.equalsIgnoreCase(Commands.INSPECT.toString())) {
             try {
                 final int port = Integer.parseInt(parts[1]);
 
@@ -41,7 +40,7 @@ public class CommandManager {
         }
 
         /* Begin imported old code */
-        else if (commandName.equalsIgnoreCase("hostlist")) {
+        else if (commandName.equalsIgnoreCase(Commands.HOSTLIST.toString())) {
             List<Host> hosts = relay.getHostList();
 
             String output = hosts.size() + " host(s): ";
@@ -55,7 +54,7 @@ public class CommandManager {
         }
         /* End old code */
 
-        else if (commandName.equalsIgnoreCase("coreconnect")) {
+        else if (commandName.equalsIgnoreCase(Commands.CORECONNECT.toString())) {
             Application.application.connectToCore();
         } else if (commandName.equalsIgnoreCase("quit")) {
             System.exit(0);
@@ -86,4 +85,6 @@ public class CommandManager {
     public Relay getRelay() {
         return relay;
     }
+
+    private enum Commands {INSPECT, HOSTLIST, CORECONNECT}
 }
