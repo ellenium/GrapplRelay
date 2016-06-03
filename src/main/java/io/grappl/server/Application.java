@@ -12,6 +12,7 @@ public class Application {
     private Relay relay;
     private CoreConnection coreConnection;
     public static Application application;
+    private boolean coreConnected = false;
 
     private static Gson gson;
 
@@ -65,16 +66,18 @@ public class Application {
         return relay;
     }
 
-    public void connectToCore() {
+    public boolean connectToCore() {
+        if (coreConnected) return false;
         Log.log("{ Connecting to core server... }");
 
         try {
             Socket socket = new Socket(Globals.CORE_SERVER_LOC, Globals.RELAY_CONTROL_PORT);
             coreConnection = new CoreConnection(getRelay(), socket);
         } catch (IOException e) {
-//            e.printStackTrace();
             System.out.println("{ Connection to core failed }");
         }
+        coreConnected = true;
+        return true;
     }
 
     public CoreConnection getCoreConnection() {

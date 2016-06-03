@@ -20,6 +20,7 @@ public class CommandManager {
 
         if (commandName.equalsIgnoreCase(Commands.INSPECT.toString())) {
             try {
+
                 final int port = Integer.parseInt(parts[1]);
 
 
@@ -29,6 +30,8 @@ public class CommandManager {
                 error("inspect", "Command use: inspect <port>");
             } catch (NullPointerException e) {
                 Log.log("Specified port isn't used");
+            } catch (NumberFormatException e) {
+                Log.log("<port> must be a number!");
             }
         } else if (commandName.equalsIgnoreCase("close")) {
             final int port = Integer.parseInt(parts[1]);
@@ -57,6 +60,7 @@ public class CommandManager {
         else if (commandName.equalsIgnoreCase(Commands.CORECONNECT.toString())) {
             Application.application.connectToCore();
         } else if (commandName.equalsIgnoreCase("quit")) {
+            relay.closeRelay();
             System.exit(0);
         } else {
             Log.log("Command not found");
