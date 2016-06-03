@@ -15,7 +15,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -26,28 +25,38 @@ import java.util.*;
  */
 public class Relay {
 
-    /** A list of all Grappl hosts currently connected. */
+    public Set<Integer> staticPorts = new HashSet<>();
+    /**
+     * A list of all Grappl hosts currently connected.
+     */
     private List<Host> hostList = new ArrayList<>();
     private Map<String, List<Host>> hostByAddress = new HashMap<>();
     private Map<Integer, Host> hostByPort = new WeakHashMap<>();
-    /** A map of associations between IPs and ports. Used primarily for static ports. */
+    /**
+     * A map of associations between IPs and ports. Used primarily for static ports.
+     */
     private Map<String, Integer> associationMap = new HashMap<>();
-
-    public Set<Integer> staticPorts = new HashSet<>();
-
-    /** Server socket for relay control connections */
+    /**
+     * Server socket for relay control connections
+     */
     private ServerSocket relayControlServer;
 
-    /** Server socket for heartbeat connection */
+    /**
+     * Server socket for heartbeat connection
+     */
     private ServerSocket heartBeatServer;
 
     // The port allocator is the source of host's exposed ports
     private PortAllocator portAllocator;
 
-    /** The process this relay is associated with */
+    /**
+     * The process this relay is associated with
+     */
     private Application application;
 
-    /** The type of relay this is (private, or core integrated) */
+    /**
+     * The type of relay this is (private, or core integrated)
+     */
     private RelayType relayType;
 
     public Relay(Application application, RelayType relayType) {
@@ -66,7 +75,7 @@ public class Relay {
 
     /**
      * Creates two servers, the message server (25564) and the heartbeat server (25570).
-     *
+     * <p>
      * The message server receives incoming requests from Grappl clients (hosts).
      * The heartbeat server is used to handle heartbeat connections between this relay and various clients.
      */
@@ -91,24 +100,26 @@ public class Relay {
             httpServer.createContext("/", new HttpHandler() {
                 @Override
                 public void handle(HttpExchange httpExchange) throws IOException {
-                    StringBuilder page = new StringBuilder("<html><body bgcolor = 'cyan'>" +
-                            "<h1><a href = 'http://grappl.io'>Grappl</a> relay is up!<br>" +
-//                            "Relay publicly available at " + InetAddress.getLocalHost().toString() + "<br>" +
-//                            hostList.size() + " hosts 'up' (This number is frequently very inaccurate thanks to memory leaks!)<br>" +
-                            "Free memory: " + NumberFormat.getInstance(Locale.US).format(Runtime.getRuntime().freeMemory()) + " bytes<br>" +
-                            "<hr>");
+                    StringBuilder page = new StringBuilder("<html><style>body{background: #F1F1F1; font-family: Arial;}" +
+                            "h1{text-align: center;}.card{text-align: center; width: 500px; margin: 0px 0px 10px; border:" +
+                            " 0px none; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1); box-sizing: border-box; background:" +
+                            " rgb(255, 255, 255) none repeat scroll 0% 0%;}.card-title{font-weight: bold; border-bottom:" +
+                            " 1px solid #e8e8e8; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);}.card-content{overflow: auto;" +
+                            " height: auto; max-height: 200px;}</style><body bgcolor='cyan'><h1><a href='http://grappl.io'>" +
+                            "Grappl</a> relay is up! <br/> Free memory: missingValue bytes <br/> <hr/> </h1><div class='card'>" +
+                            "<div class='card-title'>Allocated ports:</div><div class='card-content'>");
 
-//                    for(Integer i : staticPorts) {
-//                        page.append(i + " static port allocated<br>");
-//                    }
+                    for (Integer i : staticPorts) {
 
-                    page.append("</h1></body></html>");
-
+                        page.append(i).append(" static port allocated<br/>");
+                    }
+                    page.append("</div></div></body></html>");
                     httpExchange.sendResponseHeaders(200, page.length());
                     httpExchange.getResponseBody().write(page.toString().getBytes());
                     httpExchange.close();
                 }
             });
+            Log.log("| Started HTTP server @ 33433");
             httpServer.start();
 
             /**
@@ -117,7 +128,7 @@ public class Relay {
             Thread relayListener = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    while(true) {
+                    while (true) {
                         try {
                             Socket relayConnection = relayControlServer.accept();
 
@@ -139,7 +150,7 @@ public class Relay {
             Thread heartBeatListener = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    while(true) {
+                    while (true) {
                         try {
 
                             /* Start imported old code */
@@ -153,13 +164,13 @@ public class Relay {
                                     try {
                                         Thread.sleep(350);
                                         DataInputStream dataInputStream = new DataInputStream(heartBeatClient
-                                            .getInputStream());
+                                                .getInputStream());
 
 //                                        System.out.println("in");
-                                        while(true) {
+                                        while (true) {
                                             int time = dataInputStream.readInt();
 
-                                            for(Host host : hostByAddress.get(server)) {
+                                            for (Host host : hostByAddress.get(server)) {
                                                 host.beatHeart();
                                             }
 
@@ -169,7 +180,7 @@ public class Relay {
                                                 e.printStackTrace();
                                                 List<Host> hosts = new ArrayList<>(hostByAddress.get(server));
 
-                                                for(Host host : hosts) {
+                                                for (Host host : hosts) {
                                                     host.closeHost();
                                                 }
 
@@ -180,7 +191,7 @@ public class Relay {
                                     } catch (Exception e) {
                                         List<Host> hosts = new ArrayList<>(hostByAddress.get(server));
 
-                                        for(Host host : hosts) {
+                                        for (Host host : hosts) {
                                             host.closeHost();
                                         }
 
@@ -221,7 +232,7 @@ public class Relay {
     public void addHost(Host host) {
         hostList.add(host);
 
-        if(!hostByAddress.containsKey(host.getControlSocket().getInetAddress().toString())) {
+        if (!hostByAddress.containsKey(host.getControlSocket().getInetAddress().toString())) {
             hostByAddress.put(host.getControlSocket().getInetAddress().toString(), new ArrayList<Host>());
         }
 
@@ -230,7 +241,7 @@ public class Relay {
 
         hostByPort.put(host.getApplicationSocket().getLocalPort(), host);
 
-        if(getRelayType() == RelayType.CORE) {
+        if (getRelayType() == RelayType.CORE) {
             CoreConnection coreConnection = getApplication().getCoreConnection();
             coreConnection.serverConnected(host.getHostData());
         }
@@ -241,7 +252,7 @@ public class Relay {
         hostByAddress.get(host.getControlSocket().getInetAddress().toString()).remove(host);
         hostByPort.remove(host.getApplicationSocket().getLocalPort());
 
-        if(getRelayType() == RelayType.CORE) {
+        if (getRelayType() == RelayType.CORE) {
             CoreConnection coreConnection = getApplication().getCoreConnection();
             coreConnection.serverDisconnected(host.getHostData());
         }
@@ -269,7 +280,8 @@ public class Relay {
         try {
             String host = inetAddress.getAddress().toString();
             return hostByAddress.get(host).get(0);
-        } catch (Exception e){}
+        } catch (Exception e) {
+        }
         return null;
     }
 
